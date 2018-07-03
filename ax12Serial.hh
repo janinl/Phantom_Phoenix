@@ -155,6 +155,8 @@ void ax12SetRegister(int id, int regstart, int data);
 void ax12SetRegister2(int id, int regstart, int data);
 int ax12GetLastError();
 
+void ax12GroupSyncWrite(uint8_t bReg, uint8_t bVal, const uint8_t cPinTable[], unsigned int NUM_SERVOS);
+
 extern unsigned char ax_rx_buffer[AX12_BUFFER_SIZE];
 extern unsigned char ax_tx_buffer[AX12_BUFFER_SIZE];
 extern unsigned char ax_rx_int_buffer[AX12_BUFFER_SIZE];

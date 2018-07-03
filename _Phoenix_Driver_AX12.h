@@ -747,6 +747,8 @@ void SetRegOnAllServos(uint8_t bReg, uint8_t bVal)
   }
   ax12write(0xff - (checksum % 256));
   setRX(0);
+
+  ax12GroupSyncWrite(bReg,bVal,cPinTable,NUMSERVOS);
 }
 
 //--------------------------------------------------------------------
@@ -775,6 +777,8 @@ static uint8_t g_iIdleServoNum  = (uint8_t) - 1;
 static uint8_t g_iIdleLedState = 1;  // what state to we wish to set...
 void ServoDriver::IdleTime(void)
 {
+  std::cout << "ServoDriver::IdleTime" << std::endl;
+/*
   // Each time we call this set servos LED on or off...
   g_iIdleServoNum++;
   if (g_iIdleServoNum >= NUMSERVOS) {
@@ -783,7 +787,7 @@ void ServoDriver::IdleTime(void)
   }
   ax12SetRegister(pgm_read_byte(&cPinTable[g_iIdleServoNum]), AX_LED, g_iIdleLedState);
   ax12ReadPacket(6);  // get the response...
-
+*/
 }
 
 //--------------------------------------------------------------------

@@ -245,6 +245,34 @@ int ax12GetRegister(int servoId, int regstart, int length) {
 
   return val;
 }
+
+
+void ax12GroupSyncWrite(uint8_t bReg, uint8_t bVal, const uint8_t cPinTable[], unsigned int NUM_SERVOS)
+{
+  // Initialize GroupSyncWrite instance
+  int len = 1;
+  dynamixel::GroupSyncWrite groupSyncWrite(portHandler, packetHandler, bReg, len);
+
+  // Add each servo id and value
+  for (unsigned int i=0; i<NUM_SERVOS; ++i) {
+    uint8_t servoId = cPinTable[i];
+    bool dxl_addparam_result = groupSyncWrite.addParam(servoId, &bVal);
+    if (dxl_addparam_result != true)
+    {
+      fprintf(stderr, "[ID:%03d] groupSyncWrite addparam failed", servoId);
+      throw 1;
+    }
+  }
+
+  // Syncwrite goal position
+  int dxl_comm_result = groupSyncWrite.txPacket();
+  if (dxl_comm_result != COMM_SUCCESS) printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
+
+  // Clear syncwrite parameter storage
+  groupSyncWrite.clearParam();
+}
+
+
 void ax12SetRegister(int id, int regstart, int data) {
   cout << "ax12SetRegister id=" << id << " regstart=" << getAx12RegWithName(regstart) << " data=" << data << endl;
 }

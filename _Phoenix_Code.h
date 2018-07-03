@@ -1087,7 +1087,7 @@ void loop(void)
       Eyes = 0;
     }
 
-    // Allow the Servo driver to do stuff durint our idle time
+    // Allow the Servo driver to do stuff during our idle time
     g_ServoDriver.IdleTime();
 
     // We also have a simple debug monitor that allows us to 
