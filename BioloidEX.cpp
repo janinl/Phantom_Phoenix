@@ -17,8 +17,12 @@
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include "mytypes.h"
+#include "ax12Serial.hh"
 #include "BioloidEx.h"
-#include <avr/pgmspace.h>
+
+#include <cstdlib>
+#include "_Phoenix.h"
 
 /* initializes serial1 transmit at baud, 8-N-1 */
 BioloidControllerEx::BioloidControllerEx(long baud){

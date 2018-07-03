@@ -139,6 +139,7 @@ std::string getAx12RegWithName(int reg);
 
 //void ax12Init(long baud, Stream* pStream, int direction_pin = -1);
 void ax12Init(long baud);
+void ax12Finish();
 
 void setTXall();     // for sync write
 void setTX(int id);

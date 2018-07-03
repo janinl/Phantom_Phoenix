@@ -1,6 +1,10 @@
 #include "ax12Serial.hh"
 #include <iostream>
 
+#include "dynamixel_sdk.h"                                  // Uses Dynamixel SDK library
+#include "unistd.h"
+
+
 using namespace std;
 
 vector<string> ax12RegIdToName = {
@@ -57,6 +61,115 @@ vector<string> ax12RegIdToName = {
 "AX_PUNCH_H" //49
 };
 
+dynamixel::PortHandler *portHandler = 0;
+dynamixel::PacketHandler *packetHandler = 0;
+
+void ax12Init(long baud)
+{
+  if (portHandler && packetHandler) return; // don't initialise twice
+
+#define BAUDRATE                        1000000
+#define DEVICENAME                      "/dev/ttyUSB0"      // Check which port is being used on your controller
+                                                            // ex) Windows: "COM1"   Linux: "/dev/ttyUSB0" Mac: "/dev/tty.usbserial-*"
+// Protocol version
+#define PROTOCOL_VERSION                1.0                 // See which protocol version is used in the Dynamixel
+
+  // Initialize PortHandler Structs
+  // Set the port path
+  // Get methods and members of PortHandlerLinux or PortHandlerWindows
+  portHandler = dynamixel::PortHandler::getPortHandler(DEVICENAME);
+
+  // Initialize PacketHandler instance
+  // Set the protocol version
+  // Get methods and members of Protocol1PacketHandler or Protocol2PacketHandler
+  packetHandler = dynamixel::PacketHandler::getPacketHandler(PROTOCOL_VERSION);
+  usleep(500000);
+
+  int index = 0;
+  int dxl_comm_result = COMM_TX_FAIL;             // Communication result
+ // int dxl_goal_position[2] = {DXL_MINIMUM_POSITION_VALUE, DXL_MAXIMUM_POSITION_VALUE};         // Goal position
+
+  uint8_t dxl_error = 0;                          // Dynamixel error
+  uint16_t dxl_present_position = 0;              // Present position
+
+  // Open port
+  if (portHandler->openPort())
+  {
+    printf("Succeeded to open the port!\n");
+  }
+  else
+  {
+    printf("Failed to open the port!\n");
+    printf("Terminating...\n");
+    exit(1);
+  }
+
+  // Set port baudrate
+  if (portHandler->setBaudRate(BAUDRATE))
+  {
+    printf("Succeeded to change the baudrate!\n");
+  }
+  else
+  {
+    printf("Failed to change the baudrate!\n");
+    printf("Terminating...\n");
+    exit(1);
+  }
+  usleep(500000);
+
+/*
+    // Set max speed
+  int servoId;
+  for (servoId=1; servoId<=18; servoId++)
+  {
+    #define ADDR_SET_MOVING_SPEED 32
+    #define ADDR_LED 25
+    #define ADDR_TORQUE_LIMIT 34
+    #define ADDR_PUNCH 48
+     dxl_comm_result = packetHandler->write1ByteTxRx(portHandler, servoId, ADDR_LED, 1, &dxl_error);
+     dxl_comm_result = packetHandler->write2ByteTxRx(portHandler, servoId, ADDR_SET_MOVING_SPEED, 200, &dxl_error);
+     dxl_comm_result = packetHandler->write2ByteTxRx(portHandler, servoId, ADDR_TORQUE_LIMIT, 900, &dxl_error); // 512=50%, max 1023
+     dxl_comm_result = packetHandler->write2ByteTxRx(portHandler, servoId, ADDR_PUNCH, 32, &dxl_error); // 0?
+     if (dxl_comm_result != COMM_SUCCESS)
+     {
+       printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
+     }
+     else if (dxl_error != 0)
+     {
+       printf("%s\n", packetHandler->getRxPacketError(dxl_error));
+     }
+  }
+*/
+
+    // Read all servo positions
+    for (int servoId=1; servoId<=18; servoId++)
+    {
+      dxl_comm_result = packetHandler->read2ByteTxRx(portHandler, servoId, AX_PRESENT_POSITION_L, &dxl_present_position, &dxl_error);
+      if (dxl_comm_result != COMM_SUCCESS)
+      {
+        printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
+      }
+      else if (dxl_error != 0)
+      {
+        printf("%s\n", packetHandler->getRxPacketError(dxl_error));
+      }
+
+      printf("[ID:%03d] Pos:%03d\n", servoId, dxl_present_position);
+    }
+}
+
+void ax12Finish()
+{
+  std::cout << "ax12Finish - closing ax12 port" << std::endl;
+
+  // Close port
+  portHandler->closePort();
+
+  portHandler = 0;
+  packetHandler = 0;
+}
+
+
 string getAx12RegName(int reg)
 {
   if (reg < ax12RegIdToName.size())
@@ -68,7 +181,6 @@ string getAx12RegWithName(int reg)
    return std::to_string(reg) + "(" + getAx12RegName(reg) + ")";
 }
 
-void ax12Init(long baud) {}
 
 void setTXall() {
   cout << "setTXall" << endl;
@@ -94,9 +206,44 @@ int ax12ReadPacket(int length) {
   cout << "ax12ReadPacket " << length << endl;
   return 0;
 }
-int ax12GetRegister(int id, int regstart, int length) { 
-  cout << "ax12GetRegister id=" << id << " regstart=" << getAx12RegWithName(regstart) << " length=" << length << endl;
-  return 0;
+int ax12GetRegister(int servoId, int regstart, int length) { 
+  cout << "ax12GetRegister servoId=" << servoId << " regstart=" << getAx12RegWithName(regstart) << " length=" << length << endl;
+
+  int dxl_comm_result;
+  uint8_t dxl_error;
+  int val;
+
+  switch (length) {
+   case 1:
+    {
+      uint8_t val1;
+      dxl_comm_result = packetHandler->read1ByteTxRx(portHandler, servoId, regstart, &val1, &dxl_error);
+      val = val1;
+    }
+    break;
+   case 2:
+    {
+      uint16_t val2;
+      dxl_comm_result = packetHandler->read2ByteTxRx(portHandler, servoId, regstart, &val2, &dxl_error);
+      val = val2;
+    }
+    break;
+   default:
+    cout << "TODO: length>2" << endl;
+    exit(1);
+  }
+      if (dxl_comm_result != COMM_SUCCESS)
+      {
+        printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
+      }
+      else if (dxl_error != 0)
+      {
+        printf("%s\n", packetHandler->getRxPacketError(dxl_error));
+      }
+
+      printf(" => [ID:%03d] %03d:%03d\n", servoId, regstart, val);
+
+  return val;
 }
 void ax12SetRegister(int id, int regstart, int data) {
   cout << "ax12SetRegister id=" << id << " regstart=" << getAx12RegWithName(regstart) << " data=" << data << endl;

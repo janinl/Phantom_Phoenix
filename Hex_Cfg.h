@@ -49,7 +49,7 @@
 // Debug Options
 #ifdef DBGSerial
 #define OPT_TERMINAL_MONITOR  
-#define OPT_TERMINAL_MONITOR_IC    // Allow the input controller to define stuff as well
+//#define OPT_TERMINAL_MONITOR_IC    // Allow the input controller to define stuff as well
 //#define OPT_FIND_SERVO_OFFSETS    // Only useful if terminal monitor is enabled
 //#define OPT_PYPOSE
 #endif
@@ -67,8 +67,8 @@
 // Also define that we are using the AX12 driver
 #define USE_AX12_DRIVER
 #define OPT_BACKGROUND_PROCESS    // The AX12 has a background process
-#define OPT_CHECK_SERVO_RESET     // Try to find single servo that reset it's ID...
-#define OPT_GPPLAYER
+//#define OPT_CHECK_SERVO_RESET     // Try to find single servo that reset it's ID...
+//#define OPT_GPPLAYER
 
 #define OPT_SINGLELEG      
 
@@ -110,7 +110,7 @@
 //#define cVoltagePin  7      // Use our Analog pin jumper here...
 //#define CVADR1      1000  // VD Resistor 1 - reduced as only need ratio... 20K and 4.66K
 //#define CVADR2      233   // VD Resistor 2
-//#define cTurnOffVol  1000     // 10v
+#define cTurnOffVol  1000     // 10v
 //#define cTurnOnVol   1100     // 11V - optional part to say if voltage goes back up, turn it back on...
 
 //====================================================================

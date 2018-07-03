@@ -29,6 +29,8 @@ int main()
 {
 loop();
 
+ax12Finish();
+
 return 0;
 }
 

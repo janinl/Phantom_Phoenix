@@ -1164,6 +1164,7 @@ boolean CheckVoltage() {
 
   if (!g_fLowVoltageShutdown) {
     if ((Voltage < cTurnOffVol) || (Voltage >= 1999)) {
+      std::cout << "Voltage went low, turning off robot " << Voltage << "<" << cTurnOffVol << std::endl;
 #ifdef DBGSerial          
       DBGSerial.print("Voltage went low, turn off robot ");
       DBGSerial.println(Voltage, DEC);
@@ -1424,10 +1425,12 @@ void Gait (byte GaitCurrentLegNr)
 
   //Move body forward      
   else {
-    GaitPosX[GaitCurrentLegNr] = GaitPosX[GaitCurrentLegNr] - (g_InControlState.TravelLength.x/(short)g_InControlState.gaitCur.TLDivFactor);
+    if (g_InControlState.gaitCur.TLDivFactor) {
+      GaitPosX[GaitCurrentLegNr] = GaitPosX[GaitCurrentLegNr] - (g_InControlState.TravelLength.x/(short)g_InControlState.gaitCur.TLDivFactor);
+      GaitPosZ[GaitCurrentLegNr] = GaitPosZ[GaitCurrentLegNr] - (g_InControlState.TravelLength.z/(short)g_InControlState.gaitCur.TLDivFactor);
+      GaitRotY[GaitCurrentLegNr] = GaitRotY[GaitCurrentLegNr] - (g_InControlState.TravelLength.y/(short)g_InControlState.gaitCur.TLDivFactor);
+    }
     GaitPosY[GaitCurrentLegNr] = 0; 
-    GaitPosZ[GaitCurrentLegNr] = GaitPosZ[GaitCurrentLegNr] - (g_InControlState.TravelLength.z/(short)g_InControlState.gaitCur.TLDivFactor);
-    GaitRotY[GaitCurrentLegNr] = GaitRotY[GaitCurrentLegNr] - (g_InControlState.TravelLength.y/(short)g_InControlState.gaitCur.TLDivFactor);
   }
 
 }  
@@ -1647,7 +1650,7 @@ long GetArcCos(short cos4)
     NegativeValue = 0;
 
   //Limit cos4 to his maximal value
-  cos4 = min(cos4,c4DEC);
+  cos4 = std::min<short>(cos4,c4DEC);
 
   if ((cos4>=0) && (cos4<9000))
   {

@@ -5,6 +5,7 @@
 // Arbotix AX12 and bioloid libraries (which may have been updated)
 //====================================================================
 #include <Arduino.h> // Arduino 1.0
+#include <iostream>
 
 #ifdef c4DOF
 #define NUMSERVOSPERLEG 4
@@ -151,6 +152,8 @@ extern void SetRegOnAllServos(uint8_t bReg, uint8_t bVal);
 //Init
 //--------------------------------------------------------------------
 void ServoDriver::Init(void) {
+//  ax12Init();
+
   // First lets get the actual servo positions for all of our servos...
   //  pinMode(0, OUTPUT);
   g_fServosFree = true;
@@ -723,6 +726,7 @@ void ServoDriver::CommitServoDriver(word wMoveTime)
 //--------------------------------------------------------------------
 void SetRegOnAllServos(uint8_t bReg, uint8_t bVal)
 {
+  std::cout << "SetRegOnAllServos bReg=" << getAx12RegWithName(bReg) << " bVal=" << (int)bVal << std::endl;
   // Need to first output the header for the Sync Write
   int length = 4 + (NUMSERVOS * 2);   // 2 = id + val
   int checksum = 254 + length + AX_SYNC_WRITE + 1 + bReg;
@@ -1039,11 +1043,13 @@ void FindServoOffsets()
 // EEPromReadData - Quick and dirty function to read multiple bytes in from
 //  eeprom...
 //==============================================================================
+/*
 void EEPROMReadData(word wStart, uint8_t *pv, byte cnt) {
   while (cnt--) {
     *pv++ = EEPROM.read(wStart++);
   }
 }
+*/
 
 //==============================================================================
 // DoPyPose - This is based off of the Pypose sketch...
