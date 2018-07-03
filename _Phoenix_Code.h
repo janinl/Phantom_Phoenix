@@ -826,7 +826,7 @@ void setup(){
 //=============================================================================
 
 
-void loop(void)
+bool loop(void)
 {
   //Start time
   unsigned long lTimeWaitEnd;
@@ -870,7 +870,7 @@ void loop(void)
     //GP Player
   g_ServoDriver.GPPlayer();
   if (g_ServoDriver.FIsGPSeqActive())
-    return;  // go back to process the next message
+    return true;  // go back to process the next message
 #endif
 
   //Single leg control
@@ -1094,7 +1094,7 @@ void loop(void)
     // check things. call it here..
 #ifdef OPT_TERMINAL_MONITOR  
     if (TerminalMonitor())
-      return;           
+      return true;           
 #endif
     delay(20);  // give a pause between times we call if nothing is happening
   }
@@ -1106,6 +1106,8 @@ void loop(void)
     g_InControlState.fPrev_RobotOn = 1;
   else
     g_InControlState.fPrev_RobotOn = 0;
+
+  return true;
 }
 
 

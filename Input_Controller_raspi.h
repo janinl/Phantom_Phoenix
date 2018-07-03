@@ -17,10 +17,113 @@ void CommanderTurnRobotOff(void);
 
 InputController g_InputController;
 
-static short   g_BodyYOffset;
-static short   g_BodyYShift;
 bool g_fDynamicLegXZLength = false;  // Has the user dynamically adjusted the Leg XZ init pos (width)
 
+
+#include <iostream>
+#include <string>
+#include <fstream>
+#include <sstream>
+
+using namespace std;
+
+static int last_position=0;
+static ifstream *infile;
+
+string find_new_text() {
+
+  if (!infile) {
+    infile = new ifstream("input.txt");
+    if (!infile) return "";
+    if (!infile->good()) { delete infile; infile=0; return ""; }
+    infile->seekg(0,ios::end);
+    last_position = infile->tellg();
+  }
+  infile->clear();
+
+    infile->seekg(0,ios::end);
+    cout << "file size: " << infile->tellg() << endl;
+
+  // read file from last position
+  infile->seekg( last_position,ios::beg);
+  string val;
+  if (getline( *infile, val)) {
+    last_position = infile->tellg();
+    return val;
+  }
+  return "";
+
+}
+
+
+// Commander: class to match the controller
+/* bitmasks for buttons array */
+#define BUT_R1      0x01
+#define BUT_R2      0x02
+#define BUT_R3      0x04
+#define BUT_L4      0x08
+#define BUT_L5      0x10
+#define BUT_L6      0x20
+#define BUT_RT      0x40
+#define BUT_LT      0x80
+
+#ifndef MAX_BODY_Y
+#define MAX_BODY_Y 100
+#endif
+
+
+/* the Commander will send out a frame at about 30hz, this class helps decipher the output. */
+class Commander
+{    
+public:
+  Commander() {} 
+  //void begin(unsigned long baud);
+  //int ReadMsgs();         // must be called regularly to clean out Serial buffer
+
+  // joystick values are -125 to 125
+  signed char rightV;      // vertical stick movement = forward speed
+  signed char rightH;      // horizontal stick movement = sideways or angular speed
+  signed char leftV;      // vertical stick movement = tilt    
+  signed char leftH;      // horizontal stick movement = pan (when we run out of pan, turn body?)
+
+  // buttons are 0 or 1 (PRESSED), and bitmapped
+  unsigned char buttons;  // 
+  unsigned char ext;      // Extended function set
+
+    // Hooks are used as callbacks for button presses -- NOT IMPLEMENT YET
+
+private:
+  // internal variables used for reading messages
+  unsigned char vals[7];  // temporary values, moved after we confirm checksum
+  int index;              // -1 = waiting for new packet
+  int checksum;
+};
+
+Commander command = Commander();
+static short   g_BodyYOffset = 0; 
+static short   g_BodyYShift = 0;
+static byte    ControlMode = 0;
+static byte    HeightSpeedMode = 0;
+//static bool  DoubleHeightOn = 0;
+static bool    DoubleTravelOn = false;
+static byte    bJoystickWalkMode = 0;
+byte           GPSeq = 0;             //Number of the sequence
+static byte    buttonsPrev = 0;
+static byte    extPrev = 0;
+
+enum {
+  WALKMODE=0, TRANSLATEMODE, ROTATEMODE, 
+#ifdef OPT_SINGLELEG      
+  SINGLELEGMODE, 
+#endif
+#ifdef OPT_GPPLAYER
+  GPPLAYERMODE, 
+#endif
+  MODECNT};
+enum {
+  NORM_NORM=0, NORM_LONG, HIGH_NORM, HIGH_LONG};
+
+#define cTravelDeadZone 6      //The deadzone for the analog input from the remote
 
 
 //==============================================================================
@@ -47,10 +150,29 @@ void InputController::AllowControllerInterrupts(boolean fAllow)
 //==============================================================================
 void InputController::ControlInput(void)
 {
-CommanderTurnRobotOff();
-/*
+  string cmd = find_new_text();
+  
+
+//CommanderTurnRobotOff();
   // See if we have a new command available...
-  if(command.ReadMsgs() > 0){
+  if(cmd != ""){
+    // Parse cmd to command
+    command.buttons = 0;
+    command.buttons |= (cmd.find("BUT_R1") != string::npos)?BUT_R1:0;
+    command.buttons |= (cmd.find("BUT_R2") != string::npos)?BUT_R2:0;
+    command.buttons |= (cmd.find("BUT_R3") != string::npos)?BUT_R3:0;
+    command.buttons |= (cmd.find("BUT_L4") != string::npos)?BUT_L4:0;
+    command.buttons |= (cmd.find("BUT_L5") != string::npos)?BUT_L5:0;
+    command.buttons |= (cmd.find("BUT_L6") != string::npos)?BUT_L6:0;
+    int leftVPos = cmd.find("leftV=");
+    int leftHPos = cmd.find("leftH=");
+    int rightVPos = cmd.find("rightV=");
+    int rightHPos = cmd.find("rightH=");
+    command.leftV = (leftVPos != string::npos)?stoi(cmd.substr(leftVPos+6)):0;
+    command.leftH = (leftHPos != string::npos)?stoi(cmd.substr(leftHPos+6)):0;
+    command.rightV = (rightVPos != string::npos)?stoi(cmd.substr(rightVPos+7)):0;
+    command.rightH = (rightHPos != string::npos)?stoi(cmd.substr(rightHPos+7)):0;
+
     // If we receive a valid message than turn robot on...
     boolean fAdjustLegPositions = false;
     short sLegInitXZAdjust = 0;
@@ -356,16 +478,17 @@ CommanderTurnRobotOff();
     // Save away the buttons state as to not process the same press twice.
     buttonsPrev = command.buttons;
     extPrev = command.ext;
-    g_ulLastMsgTime = millis();
+    //g_ulLastMsgTime = millis();
   } 
   else {
+/*
     // We did not receive a valid packet.  check for a timeout to see if we should turn robot off...
     if (g_InControlState.fRobotOn) {
       if ((millis() - g_ulLastMsgTime) > ARBOTIX_TO)
         CommanderTurnRobotOff();
     }
-  }
 */
+  }
 }
 
 /*

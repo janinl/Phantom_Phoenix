@@ -27,7 +27,8 @@ long unsigned int millis() {
 
 int main()
 {
-loop();
+setup();
+while (loop()) {}
 
 ax12Finish();
 
