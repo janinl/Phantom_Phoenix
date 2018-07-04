@@ -237,7 +237,6 @@ void ServoDriver::Init(void) {
 
   // Added - try to speed things up later if we do a query...
   SetRegOnAllServos(AX_RETURN_DELAY_TIME, 0);  // tell servos to give us back their info as quick as they can...
-
 }
 
 
@@ -1349,7 +1348,7 @@ void DoPyPose(byte *psz)
                 }
                 else {
                   int x = g_bParams[1] + (g_bParams[2] << 8);
-                  ax12SetRegister2(id, g_bParams[0], x);
+                  ax12SetRegister(id, g_bParams[0], x, 2);
                 }
                 // return a packet: FF FF id Len Err params check
                 Serial.write((byte)0xff);

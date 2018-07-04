@@ -100,7 +100,7 @@
 #define AX_PUNCH_L                  48
 #define AX_PUNCH_H                  49
 
-extern std::vector<std::string> ax12RegIdToName;
+//extern std::vector<std::string> ax12RegIdToName;
 std::string getAx12RegWithName(int reg);
 
 /** Status Return Levels **/
@@ -151,10 +151,10 @@ void ax12writeB(unsigned char data);
 
 int ax12ReadPacket(int length);
 int ax12GetRegister(int id, int regstart, int length);
-void ax12SetRegister(int id, int regstart, int data);
-void ax12SetRegister2(int id, int regstart, int data);
+void ax12SetRegister(int id, int regstart, int data, int length=1);
 int ax12GetLastError();
 
+void ax12GroupSyncWriteDetailed(uint8_t startAddr, uint8_t length, uint8_t bVals[], const uint8_t servoIds[], unsigned int NUM_SERVOS);
 void ax12GroupSyncWrite(uint8_t bReg, uint8_t bVal, const uint8_t cPinTable[], unsigned int NUM_SERVOS);
 
 extern unsigned char ax_rx_buffer[AX12_BUFFER_SIZE];

@@ -110,7 +110,7 @@
 //#define cVoltagePin  7      // Use our Analog pin jumper here...
 //#define CVADR1      1000  // VD Resistor 1 - reduced as only need ratio... 20K and 4.66K
 //#define CVADR2      233   // VD Resistor 2
-#define cTurnOffVol  1000     // 10v
+//#define cTurnOffVol  1000     // 10v
 //#define cTurnOnVol   1100     // 11V - optional part to say if voltage goes back up, turn it back on...
 
 //====================================================================
@@ -156,8 +156,8 @@
 #define cLFFemurPin     3   //Front Left leg Hip Vertical
 #define cLFTibiaPin     5   //Front Left leg Knee
 
-#define cTurretRotPin  20   // Turret Rotate Pin
-#define cTurretTiltPin 21  // Turret Tilt pin
+//#define cTurretRotPin  20   // Turret Rotate Pin
+//#define cTurretTiltPin 21  // Turret Tilt pin
 
 //--------------------------------------------------------------------
 //[MIN/MAX ANGLES] - Start off assume same as Phoenix...

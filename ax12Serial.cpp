@@ -7,7 +7,9 @@
 
 using namespace std;
 
-vector<string> ax12RegIdToName = {
+string getAx12RegName(int reg)
+{
+static vector<string> ax12RegIdToName = {
 "AX_MODEL_NUMBER_L", //0
 "AX_MODEL_NUMBER_H", //1
 "AX_VERSION", //2
@@ -60,6 +62,16 @@ vector<string> ax12RegIdToName = {
 "AX_PUNCH_L", //48
 "AX_PUNCH_H" //49
 };
+  if (reg < ax12RegIdToName.size())
+    return ax12RegIdToName[reg];
+  return "unknown";
+}
+string getAx12RegWithName(int reg)
+{
+   return std::to_string(reg) + "(" + getAx12RegName(reg) + ")";
+}
+
+
 
 dynamixel::PortHandler *portHandler = 0;
 dynamixel::PacketHandler *packetHandler = 0;
@@ -117,29 +129,6 @@ void ax12Init(long baud)
   }
   usleep(500000);
 
-/*
-    // Set max speed
-  int servoId;
-  for (servoId=1; servoId<=18; servoId++)
-  {
-    #define ADDR_SET_MOVING_SPEED 32
-    #define ADDR_LED 25
-    #define ADDR_TORQUE_LIMIT 34
-    #define ADDR_PUNCH 48
-     dxl_comm_result = packetHandler->write1ByteTxRx(portHandler, servoId, ADDR_LED, 1, &dxl_error);
-     dxl_comm_result = packetHandler->write2ByteTxRx(portHandler, servoId, ADDR_SET_MOVING_SPEED, 200, &dxl_error);
-     dxl_comm_result = packetHandler->write2ByteTxRx(portHandler, servoId, ADDR_TORQUE_LIMIT, 900, &dxl_error); // 512=50%, max 1023
-     dxl_comm_result = packetHandler->write2ByteTxRx(portHandler, servoId, ADDR_PUNCH, 32, &dxl_error); // 0?
-     if (dxl_comm_result != COMM_SUCCESS)
-     {
-       printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
-     }
-     else if (dxl_error != 0)
-     {
-       printf("%s\n", packetHandler->getRxPacketError(dxl_error));
-     }
-  }
-*/
 
     // Read all servo positions
     for (int servoId=1; servoId<=18; servoId++)
@@ -156,7 +145,31 @@ void ax12Init(long baud)
 
       printf("[ID:%03d] Pos:%03d\n", servoId, dxl_present_position);
     }
+
+
+  // Debugging mode: make servos slow and weak
+  for (int servoId=1; servoId<=18; servoId++)
+  {
+    #define ADDR_SET_MOVING_SPEED 32
+    #define ADDR_LED 25
+    #define ADDR_TORQUE_LIMIT 34
+    ax12SetRegister( servoId, ADDR_LED, 1 );
+    ax12SetRegister( servoId, ADDR_SET_MOVING_SPEED, 200, 2 );
+    ax12SetRegister( servoId, ADDR_TORQUE_LIMIT, 900, 2 );
+  }
+  void setAllPunch(int val);
+  setAllPunch(4);
 }
+
+void setAllPunch(int val)
+{
+   for (int servoId=1; servoId<=18; servoId++)
+  { 
+    #define ADDR_PUNCH 48
+    ax12SetRegister( servoId, ADDR_PUNCH, val, 2 );
+  }
+}
+
 
 void ax12Finish()
 {
@@ -167,18 +180,6 @@ void ax12Finish()
 
   portHandler = 0;
   packetHandler = 0;
-}
-
-
-string getAx12RegName(int reg)
-{
-  if (reg < ax12RegIdToName.size())
-    return ax12RegIdToName[reg];
-  return "unknown";
-}
-string getAx12RegWithName(int reg)
-{
-   return std::to_string(reg) + "(" + getAx12RegName(reg) + ")";
 }
 
 
@@ -207,11 +208,17 @@ int ax12ReadPacket(int length) {
   return 0;
 }
 int ax12GetRegister(int servoId, int regstart, int length) { 
-  cout << "ax12GetRegister servoId=" << servoId << " regstart=" << getAx12RegWithName(regstart) << " length=" << length << endl;
+ cout << "ax12GetRegister servoId=" << servoId << " regstart=" << getAx12RegWithName(regstart) << " length=" << length << endl;
+
+ int retries = 0;
+ int val;
+
+ for (;;) {
+  if (retries == 5) { cout << "Aborting" << endl; exit(1); }
+  if (retries++ > 0) { cout << "Retrying" << endl; }
 
   int dxl_comm_result;
   uint8_t dxl_error;
-  int val;
 
   switch (length) {
    case 1:
@@ -232,20 +239,49 @@ int ax12GetRegister(int servoId, int regstart, int length) {
     cout << "TODO: length>2" << endl;
     exit(1);
   }
-      if (dxl_comm_result != COMM_SUCCESS)
-      {
-        printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
-      }
-      else if (dxl_error != 0)
-      {
-        printf("%s\n", packetHandler->getRxPacketError(dxl_error));
-      }
-
-      printf(" => [ID:%03d] %03d:%03d\n", servoId, regstart, val);
-
-  return val;
+  if (dxl_comm_result != COMM_SUCCESS)
+  {
+    printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
+    //val = (1<<(length*8))-1; // 255 or 65535
+    continue; // retry
+  }
+  else if (dxl_error != 0)
+  {
+    printf("%s\n", packetHandler->getRxPacketError(dxl_error));
+    //val = (1<<(length*8))-1; // 255 or 65535
+    continue; // retry
+  }
+  else
+    break;
+ }
+ printf(" => [ID:%03d] %03d:%03d\n", servoId, regstart, val);
+ return val;
 }
 
+
+void ax12GroupSyncWriteDetailed(uint8_t startAddr, uint8_t length, uint8_t bVals[], const uint8_t servoIds[], unsigned int NUM_SERVOS)
+{
+ // Initialize GroupSyncWrite instance
+  dynamixel::GroupSyncWrite groupSyncWrite(portHandler, packetHandler, startAddr, length);
+  
+  // Add each servo id and value
+  for (unsigned int i=0; i<NUM_SERVOS; ++i) {
+    uint8_t servoId = servoIds[i];
+    bool dxl_addparam_result = groupSyncWrite.addParam(servoId, &bVals[i*length]);
+    if (dxl_addparam_result != true)
+    { 
+      fprintf(stderr, "[ID:%03d] groupSyncWrite addparam failed", servoId);
+      throw 1;
+    }
+  }
+  
+  // Syncwrite goal position
+  int dxl_comm_result = groupSyncWrite.txPacket();
+  if (dxl_comm_result != COMM_SUCCESS) printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
+  
+  // Clear syncwrite parameter storage
+  groupSyncWrite.clearParam();
+}
 
 void ax12GroupSyncWrite(uint8_t bReg, uint8_t bVal, const uint8_t cPinTable[], unsigned int NUM_SERVOS)
 {
@@ -273,11 +309,47 @@ void ax12GroupSyncWrite(uint8_t bReg, uint8_t bVal, const uint8_t cPinTable[], u
 }
 
 
-void ax12SetRegister(int id, int regstart, int data) {
-  cout << "ax12SetRegister id=" << id << " regstart=" << getAx12RegWithName(regstart) << " data=" << data << endl;
-}
-void ax12SetRegister2(int id, int regstart, int data) {
-  cout << "ax12SetRegister2 id=" << id << " regstart=" << getAx12RegWithName(regstart) << " data=" << data << endl;
+void ax12SetRegister(int servoId, int regstart, int data, int length) {
+  cout << "ax12SetRegister servoId=" << servoId << " regstart=" << getAx12RegWithName(regstart) << " data=" << data << " length=" << length << endl;
+
+ int retries = 0;
+ int val;
+
+ for (;;) {
+  if (retries == 5) { cout << "Aborting" << endl; exit(1); }
+  if (retries++ > 0) { cout << "Retrying" << endl; }
+
+  int dxl_comm_result;
+  uint8_t dxl_error;
+
+  switch (length) {
+   case 1:
+    {
+      dxl_comm_result = packetHandler->write1ByteTxRx(portHandler, servoId, regstart, data, &dxl_error);
+    }
+    break;
+   case 2:
+    {
+      dxl_comm_result = packetHandler->write2ByteTxRx(portHandler, servoId, regstart, data, &dxl_error);
+    }
+    break;
+   default:
+    cout << "TODO: length>2" << endl;
+    exit(1);
+  }
+  if (dxl_comm_result != COMM_SUCCESS)
+  {
+    printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
+    continue; // retry
+  }
+  else if (dxl_error != 0)
+  {
+    printf("%s\n", packetHandler->getRxPacketError(dxl_error));
+    continue; // retry
+  }
+  else
+    break;
+ }
 }
 int ax12GetLastError() {
   cout << "ax12GetLastError" << endl;

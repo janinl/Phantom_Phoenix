@@ -22,6 +22,7 @@
 #include "BioloidEx.h"
 
 #include <cstdlib>
+#include <iostream>
 #include "_Phoenix.h"
 
 /* initializes serial1 transmit at baud, 8-N-1 */
@@ -87,6 +88,9 @@ void BioloidControllerEx::readPose(){
 }
 /* write pose out to servos using sync write. */
 void BioloidControllerEx::writePose(){
+  uint8_t valArray[100];
+  if (2*poseSize>100) { std::cout << "Error: static array is too small" << std::endl; exit(1); }
+
   int temp;
   int length = 4 + (poseSize * 3);   // 3 = id + pos(2byte)
   int checksum = 254 + length + AX_SYNC_WRITE + 2 + AX_GOAL_POSITION_L;
@@ -105,9 +109,13 @@ void BioloidControllerEx::writePose(){
     ax12write(id_[i]);
     ax12write(temp&0xff);
     ax12write(temp>>8);
+    valArray[2*i] = temp&0xff;
+    valArray[2*i+1] = temp>>8;
   } 
   ax12write(0xff - (checksum % 256));
   setRX(0);
+
+  ax12GroupSyncWriteDetailed(AX_GOAL_POSITION_L, 2, valArray, id_, poseSize);
 }
 
 /* set up for an interpolation from pose to nextpose over TIME 
