@@ -1,7 +1,8 @@
+#include "ros_cfg.h"
+
 #include "ax12Serial.hh"
 #include <iostream>
 
-#include "dynamixel_sdk.h"                                  // Uses Dynamixel SDK library
 #include "unistd.h"
 
 
@@ -71,6 +72,51 @@ string getAx12RegWithName(int reg)
    return std::to_string(reg) + "(" + getAx12RegName(reg) + ")";
 }
 
+
+void setTXall() {
+  cout << "setTXall" << endl;
+}     // for sync write
+void setTX(int id) {
+  cout << "setTX " << id << endl;
+}
+void setRX(int id) {
+  cout << "setRX " << id << endl;
+}
+
+void ax12write(unsigned char data) {
+  cout << "ax12write " << getAx12RegWithName((int)data) << endl;
+}
+void ax12write(unsigned char *pdata, int length) {
+  cout << "ax12write.2 " << endl;
+}
+void ax12writeB(unsigned char data) {
+  cout << "ax12writeB " << endl;
+}
+
+int ax12ReadPacket(int length) { 
+  cout << "ax12ReadPacket " << length << endl;
+  return 0;
+}
+
+int ax12GetLastError() {
+  cout << "ax12GetLastError" << endl;
+  return 0;
+}
+
+unsigned char ax_rx_buffer[AX12_BUFFER_SIZE];
+unsigned char ax_tx_buffer[AX12_BUFFER_SIZE];
+unsigned char ax_rx_int_buffer[AX12_BUFFER_SIZE];
+#if defined(AX_RX_SWITCHED)
+// Need to stow type of servo (which bus it's on)
+unsigned char dynamixel_bus_config[AX12_MAX_SERVOS];
+#endif
+
+
+
+
+#ifndef USE_GAZEBO_SERVOS
+
+#include "dynamixel_sdk.h"                                  // Uses Dynamixel SDK library
 
 
 dynamixel::PortHandler *portHandler = 0;
@@ -183,30 +229,6 @@ void ax12Finish()
 }
 
 
-void setTXall() {
-  cout << "setTXall" << endl;
-}     // for sync write
-void setTX(int id) {
-  cout << "setTX " << id << endl;
-}
-void setRX(int id) {
-  cout << "setRX " << id << endl;
-}
-
-void ax12write(unsigned char data) {
-  cout << "ax12write " << getAx12RegWithName((int)data) << endl;
-}
-void ax12write(unsigned char *pdata, int length) {
-  cout << "ax12write.2 " << endl;
-}
-void ax12writeB(unsigned char data) {
-  cout << "ax12writeB " << endl;
-}
-
-int ax12ReadPacket(int length) { 
-  cout << "ax12ReadPacket " << length << endl;
-  return 0;
-}
 int ax12GetRegister(int servoId, int regstart, int length) { 
  cout << "ax12GetRegister servoId=" << servoId << " regstart=" << getAx12RegWithName(regstart) << " length=" << length << endl;
 
@@ -351,16 +373,33 @@ void ax12SetRegister(int servoId, int regstart, int data, int length) {
     break;
  }
 }
-int ax12GetLastError() {
-  cout << "ax12GetLastError" << endl;
-  return 0;
+
+
+#else // ifndef USE_GAZEBO_SERVOS
+
+
+void ax12Init(long baud) {
+  cout << "ax12Init" << endl;
+}
+void ax12Finish() {
+  std::cout << "ax12Finish - closing ax12 port" << std::endl;
 }
 
-unsigned char ax_rx_buffer[AX12_BUFFER_SIZE];
-unsigned char ax_tx_buffer[AX12_BUFFER_SIZE];
-unsigned char ax_rx_int_buffer[AX12_BUFFER_SIZE];
-#if defined(AX_RX_SWITCHED)
-// Need to stow type of servo (which bus it's on)
-unsigned char dynamixel_bus_config[AX12_MAX_SERVOS];
-#endif
 
+int ax12GetRegister(int servoId, int regstart, int length) { 
+ cout << "ax12GetRegister servoId=" << servoId << " regstart=" << getAx12RegWithName(regstart) << " length=" << length << endl;
+return 0;
+}
+void ax12SetRegister(int servoId, int regstart, int data, int length) {
+  cout << "ax12SetRegister servoId=" << servoId << " regstart=" << getAx12RegWithName(regstart) << " data=" << data << " length=" << length << endl;
+}
+
+void ax12GroupSyncWriteDetailed(uint8_t startAddr, uint8_t length, uint8_t bVals[], const uint8_t servoIds[], unsigned int NUM_SERVOS) {
+  cout << "ax12GroupSyncWriteDetailed" << endl;
+}
+void ax12GroupSyncWrite(uint8_t bReg, uint8_t bVal, const uint8_t cPinTable[], unsigned int NUM_SERVOS) {
+  cout << "ax12GroupSyncWrite" << endl;
+}
+
+
+#endif // ifndef USE_GAZEBO_SERVOS
