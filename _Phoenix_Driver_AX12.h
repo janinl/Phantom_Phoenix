@@ -774,6 +774,10 @@ void ServoDriver::FreeServos(void)
 //--------------------------------------------------------------------
 static uint8_t g_iIdleServoNum  = (uint8_t) - 1;
 static uint8_t g_iIdleLedState = 1;  // what state to we wish to set...
+#ifdef USE_GAZEBO_SERVOS
+# include <ros/ros.h>
+#endif //ifdef USE_GAZEBO_SERVOS
+
 void ServoDriver::IdleTime(void)
 {
   std::cout << "ServoDriver::IdleTime" << std::endl;
@@ -787,6 +791,10 @@ void ServoDriver::IdleTime(void)
   ax12SetRegister(pgm_read_byte(&cPinTable[g_iIdleServoNum]), AX_LED, g_iIdleLedState);
   ax12ReadPacket(6);  // get the response...
 */
+
+#ifdef USE_GAZEBO_SERVOS
+  ros::spinOnce();
+#endif //ifdef USE_GAZEBO_SERVOS
 }
 
 //--------------------------------------------------------------------
