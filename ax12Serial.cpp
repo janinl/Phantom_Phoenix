@@ -408,8 +408,7 @@ public:
 
   MyRosClass()
     : n()
-	    //    , chatter_pub( n.advertise<std_msgs::Float64>("/phantomx/j_tibia_rm_position_controller/command", 1000) )
-    , jointStateSub( n.subscribe("/phantomx/joint_states", 1000, jointStateCallback) )
+    , jointStateSub( n.subscribe("/phantomx/joint_states", 1, jointStateCallback) )
   {
     servoId2jointName.resize(18+1);
     servoId2jointName[cRRCoxaPin] = "c1_rr";
@@ -434,7 +433,7 @@ public:
     joint_channels.resize(1); // adding empty space for unused servo 0
     for (int servoId=1; servoId<=18; ++servoId) {
       string jointName = "/phantomx/j_" + servoId2jointName[servoId] + "_position_controller/command";
-      joint_channels.push_back( n.advertise<std_msgs::Float64>(jointName, 100) );
+      joint_channels.push_back( n.advertise<std_msgs::Float64>(jointName, 1) );
     }
   }
 
@@ -517,7 +516,7 @@ void ax12GroupSyncWriteDetailed(uint8_t startAddr, uint8_t length, uint8_t bVals
 	int posInt = bVals[2*i] + ( bVals[2*i+1] << 8 );
 	// Convert pos from ax12 units (0-1023 for -150deg to +150deg) to gazebo units (radians)
 	const double PI = 3.14159265359;
-	double posRad = (posInt-512)/(512.0*PI);
+	double posRad = (posInt-512)*(PI/512.0);
 
 	msg2.data = posRad;
 	myRos->joint_channels[servoId].publish(msg2);

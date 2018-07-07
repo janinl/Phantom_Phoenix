@@ -173,6 +173,35 @@ void InputController::ControlInput(void)
     command.rightV = (rightVPos != string::npos)?stoi(cmd.substr(rightVPos+7)):0;
     command.rightH = (rightHPos != string::npos)?stoi(cmd.substr(rightHPos+7)):0;
 
+    // My own direct commands
+    if (cmd == "REST") {
+      uint8_t valArray[36];
+      uint8_t servoIds[18] = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
+      int poseSize = 18;
+      for (int i=0; i<18; ++i) {
+        unsigned int val = 512;
+        valArray[2*i] = val & 0xff;
+        valArray[2*i+1] = val >> 8;
+      }
+      ax12GroupSyncWriteDetailed(AX_GOAL_POSITION_L, 2, valArray, servoIds, poseSize);
+ 
+      return;
+    }
+    if (cmd == "LEG1UP") {
+      uint8_t valArray[36];
+      uint8_t servoIds[18] = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
+      int poseSize = 18;
+      for (int i=0; i<18; ++i) {
+        unsigned int val = 512;
+        if (i==16-1) val = 0;
+        valArray[2*i] = val & 0xff;
+        valArray[2*i+1] = val >> 8;
+      }
+      ax12GroupSyncWriteDetailed(AX_GOAL_POSITION_L, 2, valArray, servoIds, poseSize);
+ 
+      return;
+    }
+
     // If we receive a valid message than turn robot on...
     boolean fAdjustLegPositions = false;
     short sLegInitXZAdjust = 0;
