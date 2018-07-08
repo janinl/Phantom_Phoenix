@@ -1,5 +1,3 @@
-#include "ros_cfg.h"
-
 #include "ax12Serial.hh"
 #include <iostream>
 
@@ -516,7 +514,7 @@ void ax12GroupSyncWriteDetailed(uint8_t startAddr, uint8_t length, uint8_t bVals
 	int posInt = bVals[2*i] + ( bVals[2*i+1] << 8 );
 	// Convert pos from ax12 units (0-1023 for -150deg to +150deg) to gazebo units (radians)
 	const double PI = 3.14159265359;
-	double posRad = (posInt-512)*(PI*150.0/180.0/512.0);
+	double posRad = (posInt-512)*(PI/512.0);
 
 	msg2.data = posRad;
 	myRos->joint_channels[servoId].publish(msg2);

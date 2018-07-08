@@ -193,7 +193,7 @@ void InputController::ControlInput(void)
       int poseSize = 18;
       for (int i=0; i<18; ++i) {
         unsigned int val = 512;
-        if (i==16-1) val = 0;
+        if (i==16-1) val = 256;
         valArray[2*i] = val & 0xff;
         valArray[2*i+1] = val >> 8;
       }
