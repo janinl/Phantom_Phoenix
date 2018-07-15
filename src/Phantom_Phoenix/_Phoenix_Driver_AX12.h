@@ -222,6 +222,7 @@ void ServoDriver::Init(void) {
 #endif
 
   g_fAXSpeedControl = false;
+  //g_fAXSpeedControl = true; //testLJ
 
 #ifdef OPT_GPPLAYER
   _fGPEnabled = true;    // assume we support it.

@@ -150,6 +150,7 @@ void InputController::AllowControllerInterrupts(boolean fAllow)
 //==============================================================================
 void InputController::ControlInput(void)
 {
+  static bool activated = false;
   string cmd = find_new_text();
   
 
@@ -184,6 +185,8 @@ void InputController::ControlInput(void)
         valArray[2*i+1] = val >> 8;
       }
       ax12GroupSyncWriteDetailed(AX_GOAL_POSITION_L, 2, valArray, servoIds, poseSize);
+CommanderTurnRobotOff();
+activated=false;
  
       return;
     }
@@ -199,9 +202,21 @@ void InputController::ControlInput(void)
       }
       ax12GroupSyncWriteDetailed(AX_GOAL_POSITION_L, 2, valArray, servoIds, poseSize);
  
+CommanderTurnRobotOff();
+activated=false;
       return;
     }
 
+    if (cmd.substr(0,6) == "SPEED=") {
+      g_InControlState.SpeedControl = stoi(cmd.substr(6));
+      cout << "Setting speed to " << g_InControlState.SpeedControl << endl;
+      return;
+    }
+
+    // We received another command than our owns => activate walking
+    activated = true;
+  }
+  if (activated) {
     // If we receive a valid message than turn robot on...
     boolean fAdjustLegPositions = false;
     short sLegInitXZAdjust = 0;

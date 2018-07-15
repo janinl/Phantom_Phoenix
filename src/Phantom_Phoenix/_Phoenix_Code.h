@@ -765,6 +765,8 @@ void setup(){
 
   ResetLegInitAngles();
 
+  g_InControlState.SpeedControl = 1000;
+
   //Single leg control. Make sure no leg is selected
   #ifdef OPT_SINGLELEG
   g_InControlState.SelectedLeg = 255; // No Leg selected
