@@ -6,18 +6,20 @@
 #include "../../Phantom_Phoenix/Hex_Cfg.h"
 
 
-void callback(const std_msgs::Float64::ConstPtr& msg, int servoId)
+void callback(const std_msgs::Float64::ConstPtr& msg, int servoId, bool isReverse)
 {
   ROS_INFO("I heard: servoId=%d [%f]", servoId, msg->data);
 
    // Convert pos from gazebo units (radians) to ax12 units (0-1023 for -150deg to +150deg)
-   double posRad = -msg->data;
+   double posRad = msg->data;
    const double PI = 3.14159265359;
    double posDeg = std::fmod(posRad/PI*180.0,180);
    if (posDeg < -150 || posDeg > 150) {
      cout << "ERROR: servo position out of range" << endl;
      posDeg /= 0;
    }
+   if (isReverse) posDeg = -posDeg;
+
    double pos = posDeg/150 + 1;
    int posInt = std::nearbyint(pos * 512);
    if (posInt < 0) posInt=0;
@@ -59,7 +61,8 @@ vector<string> servoId2jointName;
     joint_channels.resize(1); // adding empty space for unused servo 0
     for (int servoId=1; servoId<=18; ++servoId) {
       string jointName = "/phantomx/j_" + servoId2jointName[servoId] + "_position_controller/command";
-      joint_channels.push_back( n.subscribe<std_msgs::Float64>(jointName, 10, boost::bind(&callback, _1, servoId)) );
+      bool isReverse = false; //servoId2jointName[servoId].substr(0,5) == "tibia" || servoId2jointName[servoId].substr(0,2) == "c1";
+      joint_channels.push_back( n.subscribe<std_msgs::Float64>(jointName, 10, boost::bind(&callback, _1, servoId, isReverse)) );
     }
 
 
